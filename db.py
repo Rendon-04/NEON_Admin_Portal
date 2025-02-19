@@ -11,7 +11,8 @@ def init_db():
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             email TEXT NOT NULL,
-            profile_pic TEXT
+            profile_pic TEXT,
+            is_admin INTEGER DEFAULT 0
         )
         """)
         conn.commit()

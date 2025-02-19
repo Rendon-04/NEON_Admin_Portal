@@ -4,11 +4,12 @@ from flask_login import UserMixin
 DATABASE_PATH = "neon.db"  
 
 class User(UserMixin):
-    def __init__(self, id_, name, email, profile_pic):
+    def __init__(self, id_, name, email, profile_pic, is_admin=0):
         self.id = id_
         self.name = name
         self.email = email
         self.profile_pic = profile_pic
+        self.is_admin = is_admin
 
     def get_id(self):
         return self.id
@@ -28,11 +29,12 @@ class User(UserMixin):
                 name=user[1],
                 email=user[2],
                 profile_pic=user[3],
+                is_admin=user[4]
             )
         return None
 
     @staticmethod
-    def create(id_, name, email, profile_pic):
+    def create(id_, name, email, profile_pic), is_admin=0:
         """Create a new user in the database."""
         connection = sqlite3.connect(DATABASE_PATH)
         cursor = connection.cursor()

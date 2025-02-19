@@ -74,11 +74,11 @@ def login():
 
 @app.route("/login/callback")
 def callback():
-    # Get authorization code Google sent back to you
+    # Get authorization code from Google
     code = request.args.get("code")
 
-    get_google_provider_cfg = get_google_provider_cfg()
-    token_endpoint = get_google_provider_cfg["token_endpoint"]
+    google_provider_cfg = get_google_provider_cfg()  # Corrected function call
+    token_endpoint = google_provider_cfg["token_endpoint"]
 
     # Prepare and send a request to get tokens
     token_url, headers, body = client.prepare_token_request(
@@ -95,31 +95,34 @@ def callback():
     )
 
     # Parse the tokens
-    client.parse_request_body_response(json.dumps(token_response.json())) 
+    client.parse_request_body_response(json.dumps(token_response.json()))
 
-    #inlcude Google profile image and email 
-    userinfo_endpoint = get_google_provider_cfg["userinfo_endpoint"]
-    uri, headers. body = client.add_token(userinfo_endpoint)
+    # Retrieve user information
+    userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
+    uri, headers, body = client.add_token(userinfo_endpoint)
     userinfo_response = requests.get(uri, headers=headers, data=body)
 
-    if userinfo_response.json().get("email_verified"):
-        unique_id = userinfo_response.json()["sub"]
-        users_email = userinfo_response.json()["email"]
-        picture = userinfo_response.json()["picture"]
-        users_name = userinfo_response.json()["given_name"]
+    if userinfo_response.status_code != 200:
+        return "Failed to fetch user info from Google", 500
+
+    userinfo = userinfo_response.json()
+
+    if userinfo.get("email_verified"):
+        unique_id = userinfo["sub"]
+        users_email = userinfo["email"]
+        picture = userinfo["picture"]
+        users_name = userinfo["given_name"]
     else:
-        return "User email not available or not verified by Google.", 400 
-    
-    #create user in db 
-    user = User(
-        id_=unique_id, name=users_name, email=users_email, profile_pic=picture
-    )
-    if not User.ger(unique_id):
+        return "User email not available or not verified by Google.", 400
+
+    # Create user in DB if they don't exist
+    if not User.get(unique_id):
         User.create(unique_id, users_name, users_email, picture)
-    #begin session 
+
+    user = User(unique_id, users_name, users_email, picture)
     login_user(user)
-    #send user back to the homepage 
-    return redirect(url_for("index")) 
+
+    return redirect(url_for("index"))
 
 @app.route("/logout")
 def logout():
